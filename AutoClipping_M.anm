@@ -1,0 +1,135 @@
+--track0:上余白,-1000,1000,0,1
+--track1:下余白,-1000,1000,0,1
+--track2:左余白,-1000,1000,0,1
+--track3:右余白,-1000,1000,0,1
+--check0:中心の位置を変更,1
+
+local w, h = obj.getpixel()
+
+-- 大きさ0ならreturn
+if w * h == 0 then
+  return
+end
+
+--
+
+local chk = obj.check0 and 1 or 0
+
+local expand = {
+  math.max(0, obj.track0),
+  math.max(0, obj.track1),
+  math.max(0, obj.track2),
+  math.max(0, obj.track3),
+}
+
+local crop = {
+  math.max(0, -obj.track0),
+  math.max(0, -obj.track1),
+  math.max(0, -obj.track2),
+  math.max(0, -obj.track3),
+}
+
+--
+
+local left, right, top, bottom = -1, -1, -1, -1
+
+if jit ~= nil then
+  -- LuaJITならFFIで高速に
+  local ffi = require("ffi")
+  pcall(ffi.cdef, [[
+    typedef struct Pixel_ {
+      uint8_t b,g,r,a;
+    } Pixel;
+  ]])
+
+  local function get_left(cdata, w, h)
+    for x = 0, w - 1 do for y = 0, h - 1 do
+      if (cdata + x + y * w).a ~= 0 then return x end
+    end end
+    return -1
+  end
+  
+  local function get_right(cdata, w, h)
+    for x = w - 1, 0, -1 do for y = 0, h - 1 do
+      if (cdata + x + y * w).a ~= 0 then return x end
+    end end
+    return -1
+  end
+  
+  local function get_top(cdata, w, h)
+    for y = 0, h - 1 do for x = 0, w - 1 do
+      if (cdata + x + y * w).a ~= 0 then return y end
+    end end
+    return -1
+  end
+  
+  local function get_bottom(cdata, w, h)
+    for y = h - 1, 0, -1 do for x = 0, w - 1 do
+      if (cdata + x + y * w).a ~= 0 then return y end
+    end end
+    return -1
+  end
+
+  local data, _, _ = obj.getpixeldata()
+  local cdata = ffi.cast("Pixel*", data)
+  left = get_left(cdata, w, h)
+  if left == -1 then
+    return
+  end
+  right = get_right(cdata, w, h)
+  top = get_top(cdata, w, h)
+  bottom = get_bottom(cdata, w, h)
+
+else
+
+  -- Lua
+  local function get_left(w, h)
+    for x = 0, w - 1 do for y = 0, h - 1 do
+      local col, a = obj.getpixel(x, y, "col")
+      if a ~= 0 then return x end
+    end end
+    return -1
+  end
+  
+  local function get_right(w, h)
+    for x = w - 1, 0, -1 do for y = 0, h - 1 do
+      local col, a = obj.getpixel(x, y, "col")
+      if a ~= 0 then return x end
+    end end
+    return -1
+  end
+  
+  local function get_top(w, h)
+    for y = 0, h - 1 do for x = 0, w - 1 do
+      local col, a = obj.getpixel(x, y, "col")
+      if a ~= 0 then return y end
+    end end
+    return -1
+  end
+  
+  local function get_bottom(w, h)
+    for y = h - 1, 0, -1 do for x = 0, w - 1 do
+      local col, a = obj.getpixel(x, y, "col")
+      if a ~= 0 then return y end
+    end end
+    return -1
+  end
+
+  left = get_left(w, h)
+  if left == -1 then
+    return
+  end
+  right = get_right(w, h)
+  top = get_top(w, h)
+  bottom = get_bottom(w, h)
+end
+
+obj.effect("クリッピング", "上", top + crop[1], "下", h - bottom - 1 + crop[2], "左", left + crop[3], "右", w - right - 1 + crop[4], "中心の位置を変更", chk)
+obj.effect("領域拡張", "上", expand[1], "下", expand[2], "左", expand[3], "右", expand[4])
+
+if chk ~= 0 then
+  local tb = (expand[2] - expand[1]) / 2.0
+  local lr = (expand[4] - expand[3]) / 2.0
+  obj.cx = obj.cx + lr
+  obj.cy = obj.cy + tb
+end

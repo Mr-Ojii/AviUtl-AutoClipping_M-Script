@@ -1,0 +1,26 @@
+name: releaser
+
+on:
+  push:
+
+jobs:
+  releaser:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Chekout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Create Archive
+      run: |
+        zip AutoClipping_M LICENSE Readme.md AutoClipping_M.anm
+    
+    - name: Create Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        REV_COUNT=$(git rev-list --count HEAD)
+        RELEASE_NAME=r${REV_COUNT}
+        TAG_NAME=r${REV_COUNT}
+        gh release create "${TAG_NAME}" ${{ github.workspace }}/*.zip -t "${RELEASE_NAME}"
