@@ -133,3 +133,7 @@ if chk ~= 0 then
   obj.cx = obj.cx + lr
   obj.cy = obj.cy + tb
 end
+
+if obj.getoption("multi_object") then
+  obj.setoption("focus_mode", "fixed_size")
+end
