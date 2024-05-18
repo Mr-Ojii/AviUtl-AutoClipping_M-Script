@@ -56,15 +56,15 @@ if jit ~= nil then
     return -1
   end
   
-  local function get_top(cdata, w, h)
-    for y = 0, h - 1 do for x = 0, w - 1 do
+  local function get_top(cdata, w, h, left, right)
+    for y = 0, h - 1 do for x = left, right do
       if (cdata + x + y * w).a ~= 0 then return y end
     end end
     return -1
   end
   
-  local function get_bottom(cdata, w, h)
-    for y = h - 1, 0, -1 do for x = 0, w - 1 do
+  local function get_bottom(cdata, w, h, left, right)
+    for y = h - 1, 0, -1 do for x = left, right do
       if (cdata + x + y * w).a ~= 0 then return y end
     end end
     return -1
@@ -77,8 +77,8 @@ if jit ~= nil then
     return
   end
   right = get_right(cdata, w, h)
-  top = get_top(cdata, w, h)
-  bottom = get_bottom(cdata, w, h)
+  top = get_top(cdata, w, h, left, right)
+  bottom = get_bottom(cdata, w, h, left, right)
 
 else
 
@@ -99,16 +99,16 @@ else
     return -1
   end
   
-  local function get_top(w, h)
-    for y = 0, h - 1 do for x = 0, w - 1 do
+  local function get_top(w, h, left, right)
+    for y = 0, h - 1 do for x = left, right do
       local col, a = obj.getpixel(x, y, "col")
       if a ~= 0 then return y end
     end end
     return -1
   end
   
-  local function get_bottom(w, h)
-    for y = h - 1, 0, -1 do for x = 0, w - 1 do
+  local function get_bottom(w, h, left, right)
+    for y = h - 1, 0, -1 do for x = left, right do
       local col, a = obj.getpixel(x, y, "col")
       if a ~= 0 then return y end
     end end
@@ -120,8 +120,8 @@ else
     return
   end
   right = get_right(w, h)
-  top = get_top(w, h)
-  bottom = get_bottom(w, h)
+  top = get_top(w, h, left, right)
+  bottom = get_bottom(w, h, left, right)
 end
 
 obj.effect("クリッピング", "上", top + crop[1], "下", h - bottom - 1 + crop[2], "左", left + crop[3], "右", w - right - 1 + crop[4], "中心の位置を変更", chk)
